@@ -11,22 +11,37 @@ const Home = () => {
     accessories: []
   });
   const [loading, setLoading] = useState(true);
+  const [imageLoadErrors, setImageLoadErrors] = useState({});
 
-  // Preload images function
-  const preloadImages = (products) => {
+  // Preload images function with error tracking
+  const preloadImages = async (products) => {
     const imagePromises = [];
+    const errors = {};
+    
     Object.values(products).flat().forEach(product => {
       if (product.images && product.images.length > 0) {
-        const img = new Image();
-        const promise = new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve; // Handle error case gracefully
+        product.images.forEach(imgSrc => {
+          const img = new Image();
+          const promise = new Promise((resolve) => {
+            img.onload = () => {
+              console.log('Image loaded successfully:', imgSrc);
+              resolve(true);
+            };
+            img.onerror = () => {
+              console.error('Image failed to load:', imgSrc);
+              errors[product._id] = true;
+              resolve(false);
+            };
+            img.src = imgSrc;
+          });
+          imagePromises.push(promise);
         });
-        img.src = product.images[0];
-        imagePromises.push(promise);
       }
     });
-    return Promise.all(imagePromises);
+
+    await Promise.all(imagePromises);
+    setImageLoadErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   useEffect(() => {
@@ -46,19 +61,32 @@ const Home = () => {
           
           response.data.data.forEach(item => {
             if (item.category && Array.isArray(item.products)) {
-              productsByCategory[item.category] = item.products.filter(product => 
-                product && product._id && product.name && product.images && product.images.length > 0
-              ).map(product => ({
-                ...product,
-                imagePosition: product.imagePosition || 'center',
-                imageScale: product.imageScale || 1,
-                imageFit: product.imageFit || 'cover'
-              }));
+              productsByCategory[item.category] = item.products
+                .filter(product => 
+                  product && 
+                  product._id && 
+                  product.name && 
+                  product.images && 
+                  product.images.length > 0 &&
+                  product.images.every(img => typeof img === 'string' && img.trim() !== '')
+                )
+                .map(product => ({
+                  ...product,
+                  imagePosition: product.imagePosition || 'center',
+                  imageScale: product.imageScale || 1,
+                  imageFit: product.imageFit || 'cover'
+                }));
             }
           });
           
           // Preload images before setting state
-          await preloadImages(productsByCategory);
+          const success = await preloadImages(productsByCategory);
+          if (success) {
+            console.log('All images preloaded successfully');
+          } else {
+            console.warn('Some images failed to preload');
+          }
+          
           console.log('Organized products by category with image settings:', productsByCategory);
           setFeaturedProducts(productsByCategory);
         } else {
@@ -100,7 +128,14 @@ const Home = () => {
   return (
     <Box>
       <HeroSection />
-      {loading ? <LoadingSkeleton /> : <FeaturedProducts products={featuredProducts} />}
+      {loading ? (
+        <LoadingSkeleton />
+      ) : (
+        <FeaturedProducts 
+          products={featuredProducts} 
+          imageLoadErrors={imageLoadErrors}
+        />
+      )}
     </Box>
   );
 };

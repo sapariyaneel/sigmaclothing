@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, IconButton, useTheme, useMediaQuery } from '@mui/material';
+import { Box, IconButton, useTheme, useMediaQuery, Skeleton } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
@@ -14,16 +14,25 @@ const ImageGallery = ({ images = [] }) => {
 
   // Preload images
   useEffect(() => {
+    if (!images || images.length === 0) return;
+    
     const imagePromises = images.map(src => {
       return new Promise((resolve) => {
         const img = new Image();
-        img.onload = resolve;
-        img.onerror = resolve;
+        img.onload = () => {
+          console.log('Image loaded:', src);
+          resolve();
+        };
+        img.onerror = () => {
+          console.error('Image failed to load:', src);
+          resolve();
+        };
         img.src = src;
       });
     });
 
     Promise.all(imagePromises).then(() => {
+      console.log('All images loaded');
       setImagesLoaded(true);
     });
   }, [images]);
@@ -39,6 +48,19 @@ const ImageGallery = ({ images = [] }) => {
   const handleThumbnailClick = (index) => {
     setCurrentIndex(index);
   };
+
+  if (!images || images.length === 0) {
+    return (
+      <Box sx={{ 
+        width: '100%',
+        height: { xs: '350px', sm: '400px', md: '500px' },
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+      }}>
+        <Skeleton variant="rectangular" width="100%" height="100%" />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -56,6 +78,15 @@ const ImageGallery = ({ images = [] }) => {
           justifyContent: 'center',
         }}
       >
+        {!imagesLoaded && (
+          <Skeleton 
+            variant="rectangular" 
+            width="100%" 
+            height="100%" 
+            sx={{ position: 'absolute', top: 0, left: 0 }}
+          />
+        )}
+        
         <AnimatePresence mode="wait">
           <motion.img
             key={currentIndex}
@@ -66,16 +97,19 @@ const ImageGallery = ({ images = [] }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             style={{
-              width: '100%',
+              width: isMobile ? 'auto' : '100%',
               height: '100%',
+              maxWidth: '100%',
               objectFit: isMobile ? 'contain' : 'cover',
               padding: isMobile ? '16px' : '0'
             }}
+            onLoad={() => console.log('Main image loaded:', images[currentIndex])}
+            onError={() => console.error('Main image failed to load:', images[currentIndex])}
           />
         </AnimatePresence>
 
         {/* Navigation Arrows */}
-        {images.length > 1 && (
+        {images.length > 1 && imagesLoaded && (
           <>
             <IconButton
               onClick={handlePrevious}
@@ -112,7 +146,7 @@ const ImageGallery = ({ images = [] }) => {
       </Box>
 
       {/* Thumbnails */}
-      {images.length > 1 && (
+      {images.length > 1 && imagesLoaded && (
         <Box
           sx={{
             display: 'flex',
