@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, IconButton, useTheme, useMediaQuery } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
@@ -8,6 +8,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const ImageGallery = ({ images = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Preload images
+  useEffect(() => {
+    const imagePromises = images.map(src => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve;
+        img.src = src;
+      });
+    });
+
+    Promise.all(imagePromises).then(() => {
+      setImagesLoaded(true);
+    });
+  }, [images]);
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -28,10 +47,13 @@ const ImageGallery = ({ images = [] }) => {
         sx={{
           position: 'relative',
           width: '100%',
-          height: { xs: '300px', sm: '400px', md: '500px' },
+          height: { xs: '350px', sm: '400px', md: '500px' },
           bgcolor: 'background.paper',
           borderRadius: 2,
           overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <AnimatePresence mode="wait">
@@ -40,13 +62,14 @@ const ImageGallery = ({ images = [] }) => {
             src={images[currentIndex]}
             alt={`Product view ${currentIndex + 1}`}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: imagesLoaded ? 1 : 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: isMobile ? 'contain' : 'cover',
+              padding: isMobile ? '16px' : '0'
             }}
           />
         </AnimatePresence>
@@ -58,11 +81,13 @@ const ImageGallery = ({ images = [] }) => {
               onClick={handlePrevious}
               sx={{
                 position: 'absolute',
-                left: 8,
+                left: { xs: 4, sm: 8 },
                 top: '50%',
                 transform: 'translateY(-50%)',
                 bgcolor: 'background.paper',
+                boxShadow: 2,
                 '&:hover': { bgcolor: 'background.paper' },
+                zIndex: 2,
               }}
             >
               <ArrowBackIcon />
@@ -71,11 +96,13 @@ const ImageGallery = ({ images = [] }) => {
               onClick={handleNext}
               sx={{
                 position: 'absolute',
-                right: 8,
+                right: { xs: 4, sm: 8 },
                 top: '50%',
                 transform: 'translateY(-50%)',
                 bgcolor: 'background.paper',
+                boxShadow: 2,
                 '&:hover': { bgcolor: 'background.paper' },
+                zIndex: 2,
               }}
             >
               <ArrowForwardIcon />
@@ -91,9 +118,11 @@ const ImageGallery = ({ images = [] }) => {
             display: 'flex',
             gap: 1,
             mt: 2,
+            px: { xs: 2, sm: 0 },
             overflowX: 'auto',
             '&::-webkit-scrollbar': { display: 'none' },
             scrollbarWidth: 'none',
+            justifyContent: { xs: 'flex-start', sm: 'center' },
           }}
         >
           {images.map((image, index) => (
@@ -104,13 +133,14 @@ const ImageGallery = ({ images = [] }) => {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleThumbnailClick(index)}
               sx={{
-                width: 80,
-                height: 80,
+                width: { xs: 60, sm: 80 },
+                height: { xs: 60, sm: 80 },
                 flexShrink: 0,
                 borderRadius: 1,
                 overflow: 'hidden',
                 cursor: 'pointer',
                 border: theme => `2px solid ${index === currentIndex ? theme.palette.primary.main : 'transparent'}`,
+                boxShadow: 1,
               }}
             >
               <img

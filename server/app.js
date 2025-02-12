@@ -26,6 +26,9 @@ const bannerRoutes = require('./routes/banner.routes');
 // Initialize express app
 const app = express();
 
+// Trust proxy - required for rate limiting behind reverse proxies
+app.set('trust proxy', 1);
+
 // Security Middleware
 app.use(helmet());
 
