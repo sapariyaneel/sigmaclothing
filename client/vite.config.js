@@ -34,31 +34,18 @@ export default defineConfig({
     })
   ],
   build: {
-    target: 'esnext',
+    target: 'es2015',
     minify: 'terser',
     cssMinify: true,
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('@mui') || id.includes('@emotion')) {
-              return 'vendor-mui'
-            }
-            if (id.includes('react')) {
-              return 'vendor-react'
-            }
-            if (id.includes('framer-motion') || id.includes('popmotion')) {
-              return 'vendor-animation'
-            }
-            return 'vendor'
-          }
-          if (id.includes('src/pages/Admin')) {
-            return 'admin'
-          }
-          if (id.includes('src/components')) {
-            return 'components'
-          }
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui': ['@mui/material', '@mui/icons-material', '@mui/lab', '@emotion/react', '@emotion/styled'],
+          'vendor-utils': ['axios', 'formik', 'yup', 'date-fns'],
+          'vendor-charts': ['chart.js', 'react-chartjs-2'],
+          'vendor-animation': ['framer-motion']
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
