@@ -1,25 +1,52 @@
 const nodemailer = require('nodemailer');
 
 // Create transporter
-const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE,
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    }
-});
+const createTransporter = () => {
+    const config = {
+        service: process.env.EMAIL_SERVICE,
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+        },
+        debug: true,
+        logger: true
+    };
+
+    console.log('Creating email transporter with config:', {
+        ...config,
+        auth: { user: config.auth.user } // Don't log the password
+    });
+
+    return nodemailer.createTransport(config);
+};
+
+const transporter = createTransporter();
 
 // Verify transporter
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('Email service error:', error);
-    } else {
+(async () => {
+    try {
+        await transporter.verify();
         console.log('Email service is ready to send messages');
+        console.log('Email configuration verified with:', {
+            service: process.env.EMAIL_SERVICE,
+            host: process.env.EMAIL_HOST,
+            port: process.env.EMAIL_PORT,
+            secure: process.env.EMAIL_SECURE === 'true',
+            user: process.env.EMAIL_USER
+        });
+    } catch (error) {
+        console.error('Email service error:', {
+            error: error.message,
+            code: error.code,
+            command: error.command,
+            response: error.response,
+            stack: error.stack
+        });
     }
-});
+})();
 
 // Email templates
 const templates = {

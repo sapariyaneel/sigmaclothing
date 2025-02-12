@@ -4,7 +4,6 @@ const Product = require('../models/product.model');
 const Razorpay = require('razorpay');
 const emailService = require('../services/email.service');
 const crypto = require('crypto');
-const { sendOrderConfirmationEmail } = require('../utils/email');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -95,8 +94,8 @@ exports.createOrder = async (req, res) => {
 
         // Send confirmation email
         try {
-            await sendOrderConfirmationEmail(order, userForEmail);
-            console.log('Order confirmation email sent successfully to:', userForEmail.email);
+            await emailService.sendOrderConfirmation(order);
+            console.log('Order confirmation email sent successfully to:', order.email);
         } catch (emailError) {
             console.error('Error sending order confirmation email:', {
                 error: emailError.message,
@@ -198,8 +197,8 @@ exports.verifyPayment = async (req, res) => {
 
         // Send confirmation email
         try {
-            await sendOrderConfirmationEmail(order, userForEmail);
-            console.log('Order confirmation email sent successfully after payment verification to:', userForEmail.email);
+            await emailService.sendOrderConfirmation(order);
+            console.log('Order confirmation email sent successfully after payment verification to:', order.email);
         } catch (emailError) {
             console.error('Error sending order confirmation email after payment verification:', {
                 error: emailError.message,
