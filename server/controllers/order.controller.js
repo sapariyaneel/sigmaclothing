@@ -94,17 +94,23 @@ exports.createOrder = async (req, res) => {
 
         // Send confirmation email
         try {
-            await emailService.sendOrderConfirmation(order);
-            console.log('Order confirmation email sent successfully to:', order.email);
+            const emailData = {
+                ...order.toObject(),
+                email: orderData.shippingAddress.email // Ensure we have the correct email
+            };
+            await emailService.sendOrderConfirmation(emailData);
+            console.log('Order confirmation email sent successfully to:', orderData.shippingAddress.email);
         } catch (emailError) {
             console.error('Error sending order confirmation email:', {
                 error: emailError.message,
                 stack: emailError.stack,
+                orderEmail: orderData.shippingAddress.email,
                 emailConfig: {
                     service: process.env.EMAIL_SERVICE,
                     host: process.env.EMAIL_HOST,
                     port: process.env.EMAIL_PORT,
-                    user: process.env.EMAIL_USER
+                    user: process.env.EMAIL_USER,
+                    hasPassword: !!process.env.EMAIL_PASSWORD
                 }
             });
         }
