@@ -4,6 +4,7 @@ const Product = require('../models/product.model');
 const Razorpay = require('razorpay');
 const emailService = require('../services/email.service');
 const crypto = require('crypto');
+const { sendOrderConfirmationEmail } = require('../utils/email');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -94,23 +95,17 @@ exports.createOrder = async (req, res) => {
 
         // Send confirmation email
         try {
-            const emailData = {
-                ...order.toObject(),
-                email: orderData.shippingAddress.email // Ensure we have the correct email
-            };
-            await emailService.sendOrderConfirmation(emailData);
-            console.log('Order confirmation email sent successfully to:', orderData.shippingAddress.email);
+            await sendOrderConfirmationEmail(order, userForEmail);
+            console.log('Order confirmation email sent successfully to:', userForEmail.email);
         } catch (emailError) {
             console.error('Error sending order confirmation email:', {
                 error: emailError.message,
                 stack: emailError.stack,
-                orderEmail: orderData.shippingAddress.email,
                 emailConfig: {
                     service: process.env.EMAIL_SERVICE,
                     host: process.env.EMAIL_HOST,
                     port: process.env.EMAIL_PORT,
-                    user: process.env.EMAIL_USER,
-                    hasPassword: !!process.env.EMAIL_PASSWORD
+                    user: process.env.EMAIL_USER
                 }
             });
         }
@@ -203,8 +198,8 @@ exports.verifyPayment = async (req, res) => {
 
         // Send confirmation email
         try {
-            await emailService.sendOrderConfirmation(order);
-            console.log('Order confirmation email sent successfully after payment verification to:', order.email);
+            await sendOrderConfirmationEmail(order, userForEmail);
+            console.log('Order confirmation email sent successfully after payment verification to:', userForEmail.email);
         } catch (emailError) {
             console.error('Error sending order confirmation email after payment verification:', {
                 error: emailError.message,

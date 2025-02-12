@@ -1,78 +1,25 @@
 const nodemailer = require('nodemailer');
 
-// Debug environment variables (without exposing sensitive data)
-console.log('Email Environment Variables Check:', {
-    EMAIL_SERVICE: process.env.EMAIL_SERVICE ? 'Set' : 'Not Set',
-    EMAIL_HOST: process.env.EMAIL_HOST ? 'Set' : 'Not Set',
-    EMAIL_PORT: process.env.EMAIL_PORT ? 'Set' : 'Not Set',
-    EMAIL_SECURE: process.env.EMAIL_SECURE ? 'Set' : 'Not Set',
-    EMAIL_USER: process.env.EMAIL_USER ? 'Set' : 'Not Set',
-    EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'Not Set',
-    NODE_ENV: process.env.NODE_ENV
+// Create transporter
+const transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE,
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    }
 });
 
-// Create transporter
-const createTransporter = () => {
-    // Validate required environment variables
-    const requiredVars = ['EMAIL_SERVICE', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD'];
-    const missingVars = requiredVars.filter(varName => !process.env[varName]);
-    
-    if (missingVars.length > 0) {
-        console.error('Missing required environment variables:', missingVars);
-        throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
-    }
-
-    const config = {
-        service: process.env.EMAIL_SERVICE,
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT),
-        secure: process.env.EMAIL_SECURE === 'true',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        },
-        debug: true,
-        logger: true
-    };
-
-    console.log('Creating email transporter with config:', {
-        service: config.service,
-        host: config.host,
-        port: config.port,
-        secure: config.secure,
-        auth: { 
-            user: config.auth.user,
-            pass: config.auth.pass ? '********' : 'Not Set'
-        }
-    });
-
-    return nodemailer.createTransport(config);
-};
-
-const transporter = createTransporter();
-
 // Verify transporter
-(async () => {
-    try {
-        await transporter.verify();
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('Email service error:', error);
+    } else {
         console.log('Email service is ready to send messages');
-        console.log('Email configuration verified with:', {
-            service: process.env.EMAIL_SERVICE,
-            host: process.env.EMAIL_HOST,
-            port: process.env.EMAIL_PORT,
-            secure: process.env.EMAIL_SECURE === 'true',
-            user: process.env.EMAIL_USER
-        });
-    } catch (error) {
-        console.error('Email service error:', {
-            error: error.message,
-            code: error.code,
-            command: error.command,
-            response: error.response,
-            stack: error.stack
-        });
     }
-})();
+});
 
 // Email templates
 const templates = {
